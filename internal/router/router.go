@@ -1,6 +1,7 @@
 package router
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/izaakdale/ittp"
@@ -10,6 +11,7 @@ import (
 type Datastore interface {
 	routes.Fetcher
 	routes.Inserter
+	routes.Lister
 }
 
 func New(d Datastore) http.Handler {
@@ -21,8 +23,9 @@ func New(d Datastore) http.Handler {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	mux.Get("/id/{id}/{type}", routes.GetID(d))
-	mux.Post("/id/{id}/{type}", routes.PostID(d))
+	mux.Get(fmt.Sprintf("/{%s}/{%s}", routes.RouteParamPK, routes.RouteParamSK), routes.Get(d))
+	mux.Post(fmt.Sprintf("/{%s}/{%s}", routes.RouteParamPK, routes.RouteParamSK), routes.Post(d))
+	mux.Get(fmt.Sprintf("/{%s}", routes.RouteParamPK), routes.List(d))
 
 	return mux
 }

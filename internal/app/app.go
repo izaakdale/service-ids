@@ -11,17 +11,20 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/smithy-go/ptr"
-	"github.com/izaakdale/service-ids/internal/datastore"
+	"github.com/go-redis/redis"
+	dsdynamo "github.com/izaakdale/service-ids/internal/datastore/dynamo"
+	dsredis "github.com/izaakdale/service-ids/internal/datastore/redis"
 	"github.com/izaakdale/service-ids/internal/router"
 	"github.com/kelseyhightower/envconfig"
 )
 
 type specification struct {
-	Host        string `envconfig:"HOST"`
-	Port        int    `envconfig:"PORT" default:"80"`
-	AWSRegion   string `envconfig:"AWS_REGION" default:"us-east-1"`
-	AWSEndpoint string `envconfig:"AWS_ENDPOINT"`
-	TableName   string `envconfig:"TABLE_NAME" required:"true"`
+	Host          string `envconfig:"HOST"`
+	Port          int    `envconfig:"PORT" default:"80"`
+	AWSRegion     string `envconfig:"AWS_REGION" default:"us-east-1"`
+	AWSEndpoint   string `envconfig:"AWS_ENDPOINT"`
+	TableName     string `envconfig:"TABLE_NAME" required:"true"`
+	RedisEndpoint string `envconfig:"REDIS_ENDPOINT" required:"true"`
 }
 
 func Run() error {
@@ -43,13 +46,26 @@ func Run() error {
 			o.BaseEndpoint = ptr.String(spec.AWSEndpoint)
 		}
 	})
-	cli := datastore.New(svc, spec.TableName)
+	cli := dsdynamo.New(svc, spec.TableName)
+	recs, _ := cli.List(context.Background(), "uuid-1011")
+	log.Printf("%+v\n", recs)
 	mux := router.New(cli)
 	log.Println("starting server...")
 
 	errCh := make(chan error, 1)
 	go func() {
 		errCh <- http.ListenAndServe(fmt.Sprintf("%s:%d", spec.Host, spec.Port), mux)
+	}()
+
+	opt, err := redis.ParseURL(spec.RedisEndpoint)
+	if err != nil {
+		return err
+	}
+	redCli := redis.NewClient(opt)
+	cli2 := dsredis.New(redCli, spec.TableName)
+	mux2 := router.New(cli2)
+	go func() {
+		errCh <- http.ListenAndServe(fmt.Sprintf("%s:%d", spec.Host, spec.Port+1), mux2)
 	}()
 
 	signalCh := make(chan os.Signal, 1)
