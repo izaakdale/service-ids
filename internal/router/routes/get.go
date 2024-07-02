@@ -11,7 +11,7 @@ import (
 )
 
 type Fetcher interface {
-	Fetch(ctx context.Context, keys datastore.Keys) (*datastore.IDRecord, error)
+	Fetch(ctx context.Context, keys datastore.Keys) (*datastore.Record, error)
 }
 
 func Get(f Fetcher) http.HandlerFunc {

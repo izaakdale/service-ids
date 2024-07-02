@@ -11,7 +11,7 @@ import (
 	"github.com/izaakdale/service-ids/internal/datastore"
 )
 
-func (c *client) List(ctx context.Context, pk string) ([]datastore.IDRecord, error) {
+func (c *client) List(ctx context.Context, pk string) ([]datastore.Record, error) {
 	keyCond := expression.Key("PK").Equal(expression.Value(pk))
 
 	expr, err := expression.NewBuilder().WithKeyCondition(keyCond).Build()
@@ -32,9 +32,9 @@ func (c *client) List(ctx context.Context, pk string) ([]datastore.IDRecord, err
 		return nil, datastore.ErrNotFound
 	}
 
-	recs := make([]datastore.IDRecord, len(out.Items))
+	recs := make([]datastore.Record, len(out.Items))
 	for idx, item := range out.Items {
-		var idRec datastore.IDRecord
+		var idRec datastore.Record
 		if err = attributevalue.UnmarshalMap(item, &idRec); err != nil {
 			return nil, fmt.Errorf("failed to unmarshal item: %w", err)
 		}

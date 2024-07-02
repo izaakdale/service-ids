@@ -14,7 +14,7 @@ func pkMatcher(pk string) string {
 	return fmt.Sprintf("%s%s*", pk, sep)
 }
 
-func (c *client) List(ctx context.Context, pk string) ([]datastore.IDRecord, error) {
+func (c *client) List(ctx context.Context, pk string) ([]datastore.Record, error) {
 	cmd := c.store.Scan(0, pkMatcher(pk), -1)
 	if cmd.Err() != nil {
 		if errors.Is(cmd.Err(), redis.Nil) {
@@ -27,7 +27,7 @@ func (c *client) List(ctx context.Context, pk string) ([]datastore.IDRecord, err
 	if len(keys) == 0 {
 		return nil, datastore.ErrNotFound
 	}
-	idRecs := make([]datastore.IDRecord, len(keys))
+	idRecs := make([]datastore.Record, len(keys))
 	for idx, key := range keys {
 		compositeKey := strings.Split(key, sep)
 		if len(compositeKey) != 2 {
@@ -41,12 +41,12 @@ func (c *client) List(ctx context.Context, pk string) ([]datastore.IDRecord, err
 			fmt.Println("redis error", cmd.Err())
 			return nil, val.Err()
 		}
-		idRecs[idx] = datastore.IDRecord{
+		idRecs[idx] = datastore.Record{
 			Keys: datastore.Keys{
 				PK: compositeKey[0],
 				SK: compositeKey[1],
 			},
-			ID: val.Val(),
+			Data: val.Val(),
 		}
 	}
 

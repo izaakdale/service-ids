@@ -9,7 +9,7 @@ import (
 	"github.com/izaakdale/service-ids/internal/datastore"
 )
 
-func (c *client) Insert(ctx context.Context, rec datastore.IDRecord) error {
+func (c *client) Insert(ctx context.Context, rec datastore.Record) error {
 	item, err := attributevalue.MarshalMap(rec)
 	if err != nil {
 		return err

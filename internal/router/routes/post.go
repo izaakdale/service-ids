@@ -10,7 +10,7 @@ import (
 )
 
 type Inserter interface {
-	Insert(ctx context.Context, rec datastore.IDRecord) error
+	Insert(ctx context.Context, rec datastore.Record) error
 }
 
 type postBody struct {
@@ -26,12 +26,12 @@ func Post(i Inserter) http.HandlerFunc {
 			http.Error(w, "invalid request body", http.StatusBadRequest)
 			return
 		}
-		rec := datastore.IDRecord{
+		rec := datastore.Record{
 			Keys: datastore.Keys{
 				PK: r.PathValue(RouteParamPK),
 				SK: r.PathValue(RouteParamSK),
 			},
-			ID: pb.Data,
+			Data: pb.Data,
 		}
 		if err := i.Insert(r.Context(), rec); err != nil {
 			log.Println("error storing record", err)

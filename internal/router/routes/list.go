@@ -11,7 +11,7 @@ import (
 )
 
 type Lister interface {
-	List(ctx context.Context, pk string) ([]datastore.IDRecord, error)
+	List(ctx context.Context, pk string) ([]datastore.Record, error)
 }
 
 func List(l Lister) http.HandlerFunc {

@@ -12,7 +12,7 @@ import (
 	"github.com/izaakdale/service-ids/internal/datastore"
 )
 
-func (c *client) Fetch(ctx context.Context, keys datastore.Keys) (*datastore.IDRecord, error) {
+func (c *client) Fetch(ctx context.Context, keys datastore.Keys) (*datastore.Record, error) {
 	in, err := attributevalue.MarshalMap(keys)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal keys: %w", err)
@@ -29,11 +29,11 @@ func (c *client) Fetch(ctx context.Context, keys datastore.Keys) (*datastore.IDR
 		}
 		return nil, fmt.Errorf("failed to get item: %w", err)
 	}
-	idRec := datastore.IDRecord{}
+	idRec := datastore.Record{}
 	if err = attributevalue.UnmarshalMap(out.Item, &idRec); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal item: %w", err)
 	}
-	if idRec.ID == "" {
+	if idRec.Data == "" {
 		return nil, datastore.ErrNotFound
 	}
 	return &idRec, nil

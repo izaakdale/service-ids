@@ -11,7 +11,7 @@ type Keys struct {
 	SK string `dynamodbav:"SK" json:"sk"`
 }
 
-type IDRecord struct {
+type Record struct {
 	Keys
-	ID string `dynamodbav:"data" json:"data"`
+	Data string `dynamodbav:"data" json:"data"`
 }

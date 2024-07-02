@@ -8,7 +8,7 @@ import (
 	"github.com/izaakdale/service-ids/internal/datastore"
 )
 
-func (c *client) Fetch(ctx context.Context, keys datastore.Keys) (*datastore.IDRecord, error) {
+func (c *client) Fetch(ctx context.Context, keys datastore.Keys) (*datastore.Record, error) {
 	key, err := createCompositeKey(keys.PK, keys.SK)
 	if err != nil {
 		return nil, err
@@ -20,9 +20,9 @@ func (c *client) Fetch(ctx context.Context, keys datastore.Keys) (*datastore.IDR
 		}
 		return nil, cmd.Err()
 	}
-	idRec := datastore.IDRecord{
+	idRec := datastore.Record{
 		Keys: keys,
-		ID:   cmd.Val(),
+		Data: cmd.Val(),
 	}
 	return &idRec, nil
 }
