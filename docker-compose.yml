@@ -1,0 +1,41 @@
+version: "3"
+services:
+  app:
+    image: izaakdale/service-singletable
+    container_name: service-singletable
+    networks:
+      - backend
+    environment:
+      - PORT=80
+      - HOST=0.0.0.0
+      - AWS_ENDPOINT=http://localstack:4566
+      - AWS_REGION=us-east-1
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+      - REDIS_ENDPOINT=redis://redis:6379
+      - TABLE_NAME=singletable
+    depends_on:
+      - localstack
+      - redis
+    ports:
+      - 8080:80
+      - 8081:81
+  localstack:
+    image: localstack/localstack
+    container_name: localstack
+    networks:
+      - backend
+    ports:
+      - 4566:4566
+    volumes:
+     - $PWD/env/init-localstack.sh:/etc/localstack/init/ready.d/init-localstack.sh
+  redis:
+    image: redis
+    container_name: redis
+    networks:
+      - backend
+    ports:
+      - 6379:6379
+
+networks:
+  backend:

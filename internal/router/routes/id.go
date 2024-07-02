@@ -29,19 +29,19 @@ func Get(f Fetcher) http.HandlerFunc {
 		})
 		if err != nil {
 			if errors.Is(err, datastore.ErrNotFound) {
-				log.Println("not found during populate")
-				http.Error(w, err.Error(), http.StatusNotFound)
+				log.Println("not found during populate", err)
+				http.Error(w, "not found", http.StatusNotFound)
 				return
 			}
-			log.Println("other error")
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			log.Println("other error", err)
+			http.Error(w, "unknown error occurred", http.StatusInternalServerError)
 			return
 		}
 
 		w.Header().Set("Content-Type", "application/json")
 		log.Println("transmitting record")
 		if err = json.NewEncoder(w).Encode(rec); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			http.Error(w, "unknown error occurred", http.StatusInternalServerError)
 			return
 		}
 	}
@@ -60,7 +60,7 @@ func Post(i Inserter) http.HandlerFunc {
 		log.Println("posting data")
 		var pb postBody
 		if err := json.NewDecoder(r.Body).Decode(&pb); err != nil {
-			log.Println("decode error")
+			log.Println("decode error", err)
 			http.Error(w, "invalid request body", http.StatusBadRequest)
 			return
 		}
@@ -72,13 +72,13 @@ func Post(i Inserter) http.HandlerFunc {
 			ID: pb.Data,
 		}
 		if err := i.Insert(r.Context(), rec); err != nil {
-			log.Println("error storing record")
+			log.Println("error storing record", err)
 			http.Error(w, "failed to store ID record", http.StatusInternalServerError)
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
 		if err := json.NewEncoder(w).Encode(rec); err != nil {
-			log.Println("encoder error")
+			log.Println("encoder error", err)
 			http.Error(w, "unknown error occurred", http.StatusInternalServerError)
 			return
 		}
@@ -94,12 +94,14 @@ func List(l Lister) http.HandlerFunc {
 		log.Println("listing data")
 		recs, err := l.List(r.Context(), r.PathValue(RouteParamPK))
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			log.Println("error listing records", err)
+			http.Error(w, "failed to list records", http.StatusInternalServerError)
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
 		if err = json.NewEncoder(w).Encode(recs); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			log.Println("encoder error", err)
+			http.Error(w, "unknown error occurred", http.StatusInternalServerError)
 			return
 		}
 	}
