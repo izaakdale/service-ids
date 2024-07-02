@@ -30,7 +30,7 @@ services:
     ports:
       - 4566:4566
     volumes:
-     - $PWD/env/init-localstack.sh:/etc/localstack/init/ready.d/init-localstack.sh
+     - $PWD/init-localstack.sh:/etc/localstack/init/ready.d/init-localstack.sh
   redis:
     image: redis
     container_name: redis
