@@ -20,9 +20,13 @@ func (c *client) List(ctx context.Context, pk string) ([]datastore.IDRecord, err
 		if errors.Is(cmd.Err(), redis.Nil) {
 			return nil, datastore.ErrNotFound
 		}
+		fmt.Println("redis error", cmd.Err())
 		return nil, cmd.Err()
 	}
 	keys, _ := cmd.Val()
+	if len(keys) == 0 {
+		return nil, datastore.ErrNotFound
+	}
 	idRecs := make([]datastore.IDRecord, len(keys))
 	for idx, key := range keys {
 		compositeKey := strings.Split(key, sep)
@@ -34,6 +38,7 @@ func (c *client) List(ctx context.Context, pk string) ([]datastore.IDRecord, err
 			if errors.Is(val.Err(), redis.Nil) {
 				continue
 			}
+			fmt.Println("redis error", cmd.Err())
 			return nil, val.Err()
 		}
 		idRecs[idx] = datastore.IDRecord{

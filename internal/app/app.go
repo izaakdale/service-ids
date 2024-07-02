@@ -28,6 +28,8 @@ type specification struct {
 	AWSEndpoint   string `envconfig:"AWS_ENDPOINT"`
 	TableName     string `envconfig:"TABLE_NAME" required:"true"`
 	RedisEndpoint string `envconfig:"REDIS_ENDPOINT" required:"true"`
+	UseDynamo     bool   `envconfig:"USE_DYNAMO" required:"true"`
+	UseRedis      bool   `envconfig:"USE_REDIS" required:"true"`
 }
 
 func Run() error {
@@ -35,49 +37,53 @@ func Run() error {
 	envconfig.MustProcess("", &spec)
 	log.Println(spec)
 
-	cfg, err := config.LoadDefaultConfig(context.Background(), func(lo *config.LoadOptions) error {
-		if spec.AWSRegion != "" {
-			lo.Region = spec.AWSRegion
-		}
-
-		if spec.AWSAcessKeyID != "" && spec.AWSSecretKey != "" {
-			lo.Credentials = aws.CredentialsProviderFunc(func(ctx context.Context) (aws.Credentials, error) {
-				return aws.Credentials{
-					AccessKeyID: spec.AWSAcessKeyID, SecretAccessKey: spec.AWSSecretKey, //, SessionToken: "test",
-				}, nil
-			})
-		}
-		return nil
-	})
-	if err != nil {
-		log.Fatal(err)
-	}
-	svc := dynamodb.NewFromConfig(cfg, func(o *dynamodb.Options) {
-		if spec.AWSEndpoint != "" {
-			o.BaseEndpoint = ptr.String(spec.AWSEndpoint)
-		}
-	})
-	cli := dsdynamo.New(svc, spec.TableName)
-	mux := router.New(cli)
-
-	log.Println("starting dynamo server...")
 	errCh := make(chan error, 1)
-	go func() {
-		errCh <- http.ListenAndServe(fmt.Sprintf("%s:%d", spec.Host, spec.Port), mux)
-	}()
+	if spec.UseDynamo {
+		cfg, err := config.LoadDefaultConfig(context.Background(), func(lo *config.LoadOptions) error {
+			if spec.AWSRegion != "" {
+				lo.Region = spec.AWSRegion
+			}
 
-	opt, err := redis.ParseURL(spec.RedisEndpoint)
-	if err != nil {
-		return err
+			if spec.AWSAcessKeyID != "" && spec.AWSSecretKey != "" {
+				lo.Credentials = aws.CredentialsProviderFunc(func(ctx context.Context) (aws.Credentials, error) {
+					return aws.Credentials{
+						AccessKeyID: spec.AWSAcessKeyID, SecretAccessKey: spec.AWSSecretKey,
+					}, nil
+				})
+			}
+			return nil
+		})
+		if err != nil {
+			log.Fatal(err)
+		}
+		svc := dynamodb.NewFromConfig(cfg, func(o *dynamodb.Options) {
+			if spec.AWSEndpoint != "" {
+				o.BaseEndpoint = ptr.String(spec.AWSEndpoint)
+			}
+		})
+		cli := dsdynamo.New(svc, spec.TableName)
+		mux := router.New(cli)
+
+		log.Println("starting dynamo server...")
+		go func() {
+			errCh <- http.ListenAndServe(fmt.Sprintf("%s:%d", spec.Host, spec.Port), mux)
+		}()
 	}
-	redCli := redis.NewClient(opt)
-	cli2 := dsredis.New(redCli, spec.TableName)
-	mux2 := router.New(cli2)
 
-	log.Println("starting redis server...")
-	go func() {
-		errCh <- http.ListenAndServe(fmt.Sprintf("%s:%d", spec.Host, spec.Port+1), mux2)
-	}()
+	if spec.UseRedis {
+		opt, err := redis.ParseURL(spec.RedisEndpoint)
+		if err != nil {
+			return err
+		}
+		redCli := redis.NewClient(opt)
+		cli2 := dsredis.New(redCli, spec.TableName)
+		mux2 := router.New(cli2)
+
+		log.Println("starting redis server...")
+		go func() {
+			errCh <- http.ListenAndServe(fmt.Sprintf("%s:%d", spec.Host, spec.Port+1), mux2)
+		}()
+	}
 
 	signalCh := make(chan os.Signal, 1)
 	signal.Notify(signalCh, os.Interrupt)

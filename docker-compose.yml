@@ -14,6 +14,8 @@ services:
       - AWS_SECRET_ACCESS_KEY=test
       - REDIS_ENDPOINT=redis://redis:6379
       - TABLE_NAME=singletable
+      - USE_REDIS=false
+      - USE_DYNAMO=true
     depends_on:
       - localstack
       - redis
