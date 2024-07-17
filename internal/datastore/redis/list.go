@@ -8,13 +8,7 @@ import (
 	"github.com/izaakdale/service-ids/internal/datastore"
 )
 
-// func pkMatcher(pk string) string {
-// 	return fmt.Sprintf("%s%s*", pk, sep)
-// }
-
 func (c *client) List(ctx context.Context, pk string) ([]datastore.Record, error) {
-	// return nil, errors.New("not implemented")
-
 	cmd := c.store.HScan(pk, 0, "*", -1)
 	if cmd.Err() != nil {
 		if errors.Is(cmd.Err(), redis.Nil) {
