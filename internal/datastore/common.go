@@ -13,5 +13,6 @@ type Keys struct {
 
 type Record struct {
 	Keys
-	Data string `dynamodbav:"data" json:"data"`
+	Cursor string `dynamodbav:"cursor,omitempty" json:"cursor,omitempty"`
+	Data   string `dynamodbav:"data" json:"data"`
 }

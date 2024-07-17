@@ -2,6 +2,8 @@ package app
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -76,6 +78,22 @@ func Run() error {
 			return err
 		}
 		redCli := redis.NewClient(opt)
+
+		for i := 0; i < 100; i++ {
+			redCli.HSet(fmt.Sprintf("bing-%d", i), "harvester", fmt.Sprintf("harvester-%d", i))
+			redCli.HSet(fmt.Sprintf("bing-%d", i), "some", fmt.Sprintf("other-%d", i))
+			bytes, _ := json.Marshal(struct {
+				One string `json:"one"`
+			}{
+				One: fmt.Sprintf("bing-%d", i),
+			})
+			b64 := base64.StdEncoding.EncodeToString(bytes)
+			redCli.HSet(fmt.Sprintf("bing-%d", i), "payload", b64)
+		}
+		for i := 0; i < 100; i++ {
+			redCli.HSet(fmt.Sprintf("harvester-%d", i), "bing", fmt.Sprintf("bing-%d", i))
+		}
+
 		cli2 := dsredis.New(redCli, spec.TableName)
 		mux2 := router.New(cli2)
 

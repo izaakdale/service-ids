@@ -11,12 +11,12 @@ import (
 	"github.com/izaakdale/service-ids/internal/datastore"
 )
 
-func (c *client) List(ctx context.Context, pk string) ([]datastore.Record, error) {
+func (c *client) List(ctx context.Context, pk string, _ uint64, limit int64) ([]datastore.Record, uint64, error) {
 	keyCond := expression.Key("PK").Equal(expression.Value(pk))
 
 	expr, err := expression.NewBuilder().WithKeyCondition(keyCond).Build()
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	out, err := c.store.Query(ctx, &dynamodb.QueryInput{
@@ -24,22 +24,25 @@ func (c *client) List(ctx context.Context, pk string) ([]datastore.Record, error
 		ExpressionAttributeNames:  expr.Names(),
 		ExpressionAttributeValues: expr.Values(),
 		KeyConditionExpression:    expr.KeyCondition(),
+		Limit:                     aws.Int32(int32(limit)),
+		// add way to handle offset
+		// ExclusiveStartKey:         nil,
 	})
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	if len(out.Items) == 0 {
-		return nil, datastore.ErrNotFound
+		return nil, 0, datastore.ErrNotFound
 	}
 
 	recs := make([]datastore.Record, len(out.Items))
 	for idx, item := range out.Items {
 		var idRec datastore.Record
 		if err = attributevalue.UnmarshalMap(item, &idRec); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal item: %w", err)
+			return nil, 0, fmt.Errorf("failed to unmarshal item: %w", err)
 		}
 		recs[idx] = idRec
 	}
 
-	return recs, nil
+	return recs, 0, nil
 }

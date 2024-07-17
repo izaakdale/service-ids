@@ -8,31 +8,30 @@ import (
 	"github.com/izaakdale/service-ids/internal/datastore"
 )
 
-func (c *client) List(ctx context.Context, pk string) ([]datastore.Record, error) {
-	cmd := c.store.HScan(pk, 0, "*", -1)
+func (c *client) List(ctx context.Context, pk string, cursor uint64, count int64) ([]datastore.Record, uint64, error) {
+	cmd := c.store.HScan(pk, cursor, "*", count)
 	if cmd.Err() != nil {
 		if errors.Is(cmd.Err(), redis.Nil) {
-			return nil, datastore.ErrNotFound
+			return nil, 0, datastore.ErrNotFound
 		}
-		return nil, cmd.Err()
+		return nil, 0, cmd.Err()
 	}
 
+	vals, curs := cmd.Val()
 	idRecs := make([]datastore.Record, 0)
-	it := cmd.Iterator()
-	for it.Next() {
-		currentSK := it.Val()
-		it.Next()
 
+	for i := 0; i < len(vals); i += 2 {
 		idRecs = append(idRecs, datastore.Record{
 			Keys: datastore.Keys{
 				PK: pk,
-				SK: currentSK,
+				SK: vals[i],
 			},
-			Data: it.Val(),
+			Data: vals[i+1],
 		})
 	}
+
 	if len(idRecs) == 0 {
-		return nil, datastore.ErrNotFound
+		return nil, 0, datastore.ErrNotFound
 	}
-	return idRecs, nil
+	return idRecs, curs, nil
 }
