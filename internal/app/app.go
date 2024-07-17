@@ -26,16 +26,16 @@ type specification struct {
 	AWSAcessKeyID string `envconfig:"AWS_ACCESS_KEY_ID"`
 	AWSSecretKey  string `envconfig:"AWS_SECRET_ACCESS_KEY"`
 	AWSEndpoint   string `envconfig:"AWS_ENDPOINT"`
-	TableName     string `envconfig:"TABLE_NAME" required:"true"`
-	RedisEndpoint string `envconfig:"REDIS_ENDPOINT" required:"true"`
-	UseDynamo     bool   `envconfig:"USE_DYNAMO" required:"true"`
-	UseRedis      bool   `envconfig:"USE_REDIS" required:"true"`
+	TableName     string `envconfig:"TABLE_NAME"`
+	RedisEndpoint string `envconfig:"REDIS_ENDPOINT"`
+	UseDynamo     bool   `envconfig:"USE_DYNAMO" default:"false"`
+	UseRedis      bool   `envconfig:"USE_REDIS" default:"false"`
 }
 
 func Run() error {
 	var spec specification
 	envconfig.MustProcess("", &spec)
-	log.Println(spec)
+	log.Printf("%+v\n", spec)
 
 	errCh := make(chan error, 1)
 	if spec.UseDynamo {

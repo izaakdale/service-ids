@@ -7,11 +7,7 @@ import (
 )
 
 func (c *client) Insert(ctx context.Context, rec datastore.Record) error {
-	key, err := createCompositeKey(rec.Keys.PK, rec.Keys.SK)
-	if err != nil {
-		return err
-	}
-	cmd := c.store.Set(key, rec.Data, 0)
+	cmd := c.store.HSet(rec.Keys.PK, rec.Keys.SK, rec.Data)
 	if cmd.Err() != nil {
 		return cmd.Err()
 	}
