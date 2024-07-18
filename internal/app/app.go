@@ -2,8 +2,6 @@ package app
 
 import (
 	"context"
-	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -22,16 +20,18 @@ import (
 )
 
 type specification struct {
-	Host          string `envconfig:"HOST"`
-	Port          int    `envconfig:"PORT" default:"80"`
-	AWSRegion     string `envconfig:"AWS_REGION" default:"us-east-1"`
-	AWSAcessKeyID string `envconfig:"AWS_ACCESS_KEY_ID"`
-	AWSSecretKey  string `envconfig:"AWS_SECRET_ACCESS_KEY"`
-	AWSEndpoint   string `envconfig:"AWS_ENDPOINT"`
-	TableName     string `envconfig:"TABLE_NAME"`
-	RedisEndpoint string `envconfig:"REDIS_ENDPOINT"`
-	UseDynamo     bool   `envconfig:"USE_DYNAMO" default:"false"`
-	UseRedis      bool   `envconfig:"USE_REDIS" default:"false"`
+	DynamoServerHost string `envconfig:"DYNAMO_SERVER_HOST"`
+	RedisServerHost  string `envconfig:"REDIS_SERVER_HOST"`
+	DynamoServerPort int    `envconfig:"DYNAMO_SERVER_PORT" default:"80"`
+	RedisServerPort  int    `envconfig:"REDIS_SERVER_PORT" default:"81"`
+	AWSRegion        string `envconfig:"AWS_REGION" default:"us-east-1"`
+	AWSAcessKeyID    string `envconfig:"AWS_ACCESS_KEY_ID"`
+	AWSSecretKey     string `envconfig:"AWS_SECRET_ACCESS_KEY"`
+	AWSEndpoint      string `envconfig:"AWS_ENDPOINT"`
+	TableName        string `envconfig:"TABLE_NAME"`
+	RedisEndpoint    string `envconfig:"REDIS_ENDPOINT"`
+	UseDynamo        bool   `envconfig:"USE_DYNAMO" default:"false"`
+	UseRedis         bool   `envconfig:"USE_REDIS" default:"false"`
 }
 
 func Run() error {
@@ -68,7 +68,7 @@ func Run() error {
 
 		log.Println("starting dynamo server...")
 		go func() {
-			errCh <- http.ListenAndServe(fmt.Sprintf("%s:%d", spec.Host, spec.Port), mux)
+			errCh <- http.ListenAndServe(fmt.Sprintf("%s:%d", spec.DynamoServerHost, spec.DynamoServerPort), mux)
 		}()
 	}
 
@@ -78,28 +78,12 @@ func Run() error {
 			return err
 		}
 		redCli := redis.NewClient(opt)
-
-		for i := 0; i < 100; i++ {
-			redCli.HSet(fmt.Sprintf("bing-%d", i), "harvester", fmt.Sprintf("harvester-%d", i))
-			redCli.HSet(fmt.Sprintf("bing-%d", i), "some", fmt.Sprintf("other-%d", i))
-			bytes, _ := json.Marshal(struct {
-				One string `json:"one"`
-			}{
-				One: fmt.Sprintf("bing-%d", i),
-			})
-			b64 := base64.StdEncoding.EncodeToString(bytes)
-			redCli.HSet(fmt.Sprintf("bing-%d", i), "payload", b64)
-		}
-		for i := 0; i < 100; i++ {
-			redCli.HSet(fmt.Sprintf("harvester-%d", i), "bing", fmt.Sprintf("bing-%d", i))
-		}
-
-		cli2 := dsredis.New(redCli, spec.TableName)
-		mux2 := router.New(cli2)
+		cli := dsredis.New(redCli, spec.TableName)
+		mux := router.New(cli)
 
 		log.Println("starting redis server...")
 		go func() {
-			errCh <- http.ListenAndServe(fmt.Sprintf("%s:%d", spec.Host, spec.Port+1), mux2)
+			errCh <- http.ListenAndServe(fmt.Sprintf("%s:%d", spec.RedisServerHost, spec.RedisServerPort), mux)
 		}()
 	}
 

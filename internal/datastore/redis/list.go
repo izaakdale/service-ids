@@ -8,8 +8,8 @@ import (
 	"github.com/izaakdale/service-ids/internal/datastore"
 )
 
-func (c *client) List(ctx context.Context, pk string, cursor uint64, count int64) ([]datastore.Record, uint64, error) {
-	cmd := c.store.HScan(pk, cursor, "*", count)
+func (c *client) List(ctx context.Context, pk string) ([]datastore.Record, uint64, error) {
+	cmd := c.store.HScan(pk, 0, "*", -1)
 	if cmd.Err() != nil {
 		if errors.Is(cmd.Err(), redis.Nil) {
 			return nil, 0, datastore.ErrNotFound

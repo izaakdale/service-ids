@@ -11,7 +11,7 @@ import (
 	"github.com/izaakdale/service-ids/internal/datastore"
 )
 
-func (c *client) List(ctx context.Context, pk string, _ uint64, limit int64) ([]datastore.Record, uint64, error) {
+func (c *client) List(ctx context.Context, pk string) ([]datastore.Record, uint64, error) {
 	keyCond := expression.Key("PK").Equal(expression.Value(pk))
 
 	expr, err := expression.NewBuilder().WithKeyCondition(keyCond).Build()
@@ -24,9 +24,6 @@ func (c *client) List(ctx context.Context, pk string, _ uint64, limit int64) ([]
 		ExpressionAttributeNames:  expr.Names(),
 		ExpressionAttributeValues: expr.Values(),
 		KeyConditionExpression:    expr.KeyCondition(),
-		Limit:                     aws.Int32(int32(limit)),
-		// add way to handle offset
-		// ExclusiveStartKey:         nil,
 	})
 	if err != nil {
 		return nil, 0, err
